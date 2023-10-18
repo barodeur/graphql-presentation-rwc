@@ -1,95 +1,56 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
+
+import { Suspense, useState } from "react";
+
+import { RelayEnvironmentProvider, useLazyLoadQuery } from "react-relay";
+import { graphql } from "@/app/graphql";
+import { relayEnvironment } from "./relayEnvironment";
+import { pageQuery } from "./__generated__/pageQuery.graphql";
+import { MatchListItem } from "./components/MatchListItem";
+import { Match } from "./Match";
+
+const query = graphql`
+  query pageQuery {
+    matches {
+      id
+      ...MatchListItem
+    }
+  }
+`;
+
+export function MatchList({
+  onMatchClick,
+}: {
+  onMatchClick: (id: string) => unknown;
+}) {
+  const data = useLazyLoadQuery<pageQuery>(query, {});
+
+  return (
+    <ul>
+      {data.matches.map((match) => (
+        <MatchListItem
+          key={match.id}
+          match={match}
+          onClick={() => onMatchClick(match.id)}
+        />
+      ))}
+    </ul>
+  );
+}
 
 export default function Home() {
+  const [matchId, setMatchId] = useState<string | null>(null);
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    <RelayEnvironmentProvider environment={relayEnvironment}>
+      <h1>Match list</h1>
+      <Suspense fallback={"Chargement..."}>
+        <MatchList onMatchClick={setMatchId} />
+      </Suspense>
+      <hr />
+      <Suspense fallback={"chargement des détails"}>
+        {matchId !== null && <Match key={matchId} matchId={matchId} />}
+      </Suspense>
+    </RelayEnvironmentProvider>
+  );
 }
